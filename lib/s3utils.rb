@@ -16,14 +16,13 @@ class S3Utils
     @s3_bucket.objects.create(upload_location, open(file_path))
   end
 
-  def delete(file_path)
-    @s3_bucket.objects[File.basename(file_path)].delete
+  def delete(key)
+    @s3_bucket.objects[key].delete
   end
 
   def list
-    @s3_bucket.objects.each do |obj|
-      puts "#{obj.bucket.name}/#{obj.key}"
-    end
+    objects = @s3_bucket.objects
+    objects
   end
 
   protected

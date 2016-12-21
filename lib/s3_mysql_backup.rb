@@ -109,24 +109,31 @@ class S3MysqlBackup
     monthly = (today - 120)
 
     path = File.expand_path(config['backup_dir'])
-
-    Dir["#{path}/*.sql.gz"].each do |name|
-      date     = name.split('.')[1]
+    # Dir["#{path}/*.sql.gz"].each do |name|
+    @s3utils.list.each do |object|
+      #puts object.key
+      remote_dir =  config["remote_dir"]
+      unless object.key =~ /#{remote_dir}/
+        next
+      end
+      file = object.key.split('/')[-1]
+      date     = file.split('.')[1]
       filedate = Date.strptime(date, '%Y%m%d')
-
       if filedate < weekly && filedate >= monthly
         # keep weeklies and also first of month
         unless filedate.wday == 0 || filedate.day == 1
-          FileUtils.rm_f(name)
-          @s3utils.delete(name)
+          FileUtils.rm_f("#{path}/#{file}")
+          #puts "weekly delete #{object.key}"
+          @s3utils.delete(object.key)
         end
       elsif filedate < monthly
         # delete all old local files
-        FileUtils.rm_f(name)
+        FileUtils.rm_f("#{path}/#{file}")
 
         # keep just first of month in S3
         unless filedate.day == 1
-          @s3utils.delete(name)
+          #puts "monthly delete #{object.key}"
+          @s3utils.delete(object.key)
         end
       end
     end # Dir.each
